@@ -1,0 +1,5 @@
+{
+  "name": "TaskFlow",
+  "description": "A daily task tracker with Kanban board, list view, and time tracking.",
+  "requestFramePermissions": []
+}

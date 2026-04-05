@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "A task in the project",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["todo", "in-progress", "review", "done"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+        "categoryId": { "type": "string" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "timeEstimate": { "type": "number" },
+        "assignee": { "type": "string" },
+        "subtasks": { "type": "array" },
+        "timeSpent": { "type": "number" },
+        "images": { "type": "array" },
+        "comments": { "type": "array" },
+        "materials": { "type": "array" },
+        "budget": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["title", "status", "priority", "userId"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "User settings",
+      "type": "object",
+      "properties": {
+        "theme": { "type": "string" },
+        "language": { "type": "string" },
+        "workingHours": { "type": "object" },
+        "reminderTiming": { "type": "number" },
+        "measurementUnit": { "type": "string" },
+        "notificationsEnabled": { "type": "boolean" },
+        "userId": { "type": "string" }
+      },
+      "required": ["userId"]
+    }
+  },
+  "firestore": {
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Tasks collection"
+    },
+    "/settings/{userId}": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "User settings collection"
+    }
+  }
+}

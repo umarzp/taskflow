@@ -4,7 +4,7 @@ import { Task, Status, User, Category, Priority } from '../types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Calendar, Clock, MessageSquare, MoreHorizontal, CheckSquare, Utensils, Bed, Sofa, Sun, Briefcase, Image as ImageIcon, Package } from 'lucide-react';
+import { Calendar, Clock, MessageSquare, MoreHorizontal, CheckSquare, Utensils, Bed, Sofa, Sun, Briefcase, Image as ImageIcon, Package, AlertTriangle } from 'lucide-react';
 import { format, isPast, isToday } from 'date-fns';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
@@ -73,11 +73,11 @@ export function KanbanBoard({ tasks, users, categories, onMoveTask, onTaskClick,
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex-1 h-full w-full overflow-x-auto overflow-y-hidden pb-4 min-h-0 min-w-0 snap-x snap-mandatory md:snap-none">
-        <div className="flex gap-6 h-full w-max px-4 md:px-0">
+      <div className="flex-1 h-full w-full overflow-x-auto overflow-y-hidden pb-28 md:pb-4 min-h-0">
+        <div className="flex gap-4 md:gap-6 h-full px-4 md:px-0 min-w-max md:min-w-0 md:grid md:grid-flow-col md:auto-cols-[calc(50%-12px)] lg:auto-cols-[calc(33.333%-16px)]">
           {COLUMNS.map((column) => (
-            <div key={column.id} className="flex min-w-[300px] max-w-[300px] md:min-w-[320px] md:max-w-[320px] flex-col gap-4 snap-center shrink-0 h-full">
-            <div className="flex items-center justify-between px-2 py-1 bg-white/50 dark:bg-slate-900/50 rounded-lg shadow-sm mb-2">
+            <div key={column.id} className="flex flex-col gap-3 h-full shrink-0 w-[85vw] md:w-auto md:flex-1">
+            <div className="flex items-center justify-between px-2 py-1 bg-white/50 dark:bg-slate-900/50 rounded-lg shadow-sm mb-2 shrink-0">
               <div className="flex items-center gap-2">
                 <div className={cn("w-3 h-3 rounded-full", column.color.split(' ')[0].replace('bg-', 'bg-').replace('-100/80', '-500').replace('-200/80', '-500'))} />
                 <h3 className="font-bold text-sm tracking-tight uppercase text-slate-800 dark:text-slate-200">{column.title}</h3>
@@ -101,6 +101,16 @@ export function KanbanBoard({ tasks, users, categories, onMoveTask, onTaskClick,
                   <div className="flex flex-col gap-3">
                     {getTasksByStatus(column.id).map((task, index) => {
                       const category = categories.find(c => c.id === task.categoryId);
+                      const totalSubtasks = task.subtasks?.length || 0;
+                      const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0;
+                      const pendingSubtasks = totalSubtasks - completedSubtasks;
+                      const allCompleted = totalSubtasks > 0 && pendingSubtasks === 0;
+                      const noneCompleted = totalSubtasks > 0 && completedSubtasks === 0;
+                      
+                      let subtaskColorClass = "";
+                      if (allCompleted) subtaskColorClass = "text-green-600 dark:text-green-500 font-medium";
+                      else if (noneCompleted) subtaskColorClass = "text-red-500 dark:text-red-400 font-medium";
+                      else if (totalSubtasks > 0) subtaskColorClass = "text-orange-500 dark:text-orange-400 font-medium";
                       
                       return (
                       <Draggable key={task.id} draggableId={task.id} index={index}>
@@ -167,10 +177,23 @@ export function KanbanBoard({ tasks, users, categories, onMoveTask, onTaskClick,
                                       </div>
                                     )}
                                     
-                                    {task.subtasks.length > 0 && (
-                                      <div className="flex items-center gap-1">
-                                        <CheckSquare className="h-3.5 w-3.5" />
-                                        <span>{task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}</span>
+                                    {totalSubtasks > 0 && (
+                                      <div className={cn(
+                                        "flex items-center gap-1",
+                                        subtaskColorClass
+                                      )}>
+                                        {noneCompleted ? (
+                                          <AlertTriangle className="h-3.5 w-3.5" />
+                                        ) : (
+                                          <CheckSquare className="h-3.5 w-3.5" />
+                                        )}
+                                        <span>
+                                          {noneCompleted 
+                                            ? `${pendingSubtasks} pending` 
+                                            : allCompleted 
+                                              ? `${completedSubtasks}/${totalSubtasks}` 
+                                              : `${completedSubtasks}/${totalSubtasks} (${pendingSubtasks} pending)`}
+                                        </span>
                                       </div>
                                     )}
                                     

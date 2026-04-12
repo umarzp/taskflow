@@ -38,7 +38,7 @@ export function useTaskStore() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
-  const [categories] = useState<Category[]>(MOCK_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>(MOCK_CATEGORIES);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export function useTaskStore() {
     };
   }, [isAuthReady, userId]);
 
-  // Local storage for users and notifications
+  // Local storage for users, categories, and notifications
   useEffect(() => {
     const savedUsers = localStorage.getItem('taskflow-users');
     if (savedUsers) {
@@ -92,6 +92,14 @@ export function useTaskStore() {
         setUsers(JSON.parse(savedUsers));
       } catch (e) {
         console.error("Failed to parse users");
+      }
+    }
+    const savedCategories = localStorage.getItem('taskflow-categories');
+    if (savedCategories) {
+      try {
+        setCategories(JSON.parse(savedCategories));
+      } catch (e) {
+        console.error("Failed to parse categories");
       }
     }
     const savedNotifications = localStorage.getItem('taskflow-notifications');
@@ -107,6 +115,10 @@ export function useTaskStore() {
   useEffect(() => {
     localStorage.setItem('taskflow-users', JSON.stringify(users));
   }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem('taskflow-categories', JSON.stringify(categories));
+  }, [categories]);
 
   useEffect(() => {
     localStorage.setItem('taskflow-notifications', JSON.stringify(notifications));
@@ -195,6 +207,24 @@ export function useTaskStore() {
     setUsers(prev => prev.filter(u => u.id !== id));
   };
 
+  const addCategory = (category: Omit<Category, 'id'>) => {
+    const newCategory: Category = {
+      ...category,
+      id: `c-${Date.now()}`,
+    };
+    setCategories(prev => [...prev, newCategory]);
+  };
+
+  const updateCategory = (id: string, updates: Partial<Category>) => {
+    setCategories(prev => prev.map(c => 
+      c.id === id ? { ...c, ...updates } : c
+    ));
+  };
+
+  const removeCategory = (id: string) => {
+    setCategories(prev => prev.filter(c => c.id !== id));
+  };
+
   const markNotificationRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
@@ -220,6 +250,9 @@ export function useTaskStore() {
     addUser,
     updateUser,
     removeUser,
+    addCategory,
+    updateCategory,
+    removeCategory,
     markNotificationRead,
     clearNotification
   };

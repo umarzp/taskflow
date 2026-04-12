@@ -58,7 +58,7 @@ export function ListView({ tasks, users, categories, onTaskClick, onDeleteTask }
   };
 
   return (
-    <div className="rounded-md border bg-card">
+    <div className="rounded-md border bg-card flex-1 overflow-y-auto min-h-0">
       <Table>
         <TableHeader>
           <TableRow>

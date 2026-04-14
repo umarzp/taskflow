@@ -9,7 +9,7 @@ import { Task, User, Category, Priority, Status, Subtask, Material, Comment } fr
 import { Calendar } from './ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, Trash2, Clock, Play, Square, Package, Image as ImageIcon, MessageSquare, Sparkles, Loader2, Edit2, CheckSquare, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, Clock, Play, Square, Package, Image as ImageIcon, MessageSquare, Sparkles, Loader2, Edit2, CheckSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
@@ -47,7 +47,7 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
   const [status, setStatus] = useState<Status>('todo');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [assignee, setAssignee] = useState<string>('none');
-  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [categoryId, setCategoryId] = useState<string>('none');
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [newSubtask, setNewSubtask] = useState('');
   const [timeEstimate, setTimeEstimate] = useState<number>(0);
@@ -55,7 +55,6 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
   const [materials, setMaterials] = useState<Material[]>([]);
   const [newMaterialName, setNewMaterialName] = useState('');
   const [newMaterialVendor, setNewMaterialVendor] = useState('');
-  const [newMaterialQuantity, setNewMaterialQuantity] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
@@ -91,7 +90,7 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
       setStatus(task.status);
       setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
       setAssignee(task.assignee || 'none');
-      setCategoryIds(task.categoryIds || []);
+      setCategoryId(task.categoryId || 'none');
       setSubtasks(task.subtasks);
       setTimeEstimate(task.timeEstimate || 0);
       setBudget(task.budget || 0);
@@ -108,7 +107,7 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
       setStatus('todo');
       setDueDate(undefined);
       setAssignee('none');
-      setCategoryIds([]);
+      setCategoryId('none');
       setSubtasks([]);
       setTimeEstimate(0);
       setBudget(0);
@@ -141,7 +140,7 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
       status,
       dueDate: dueDate ? dueDate.toISOString() : null,
       assignee: assignee === 'none' ? null : assignee,
-      categoryIds,
+      categoryId: categoryId === 'none' ? null : categoryId,
       timeEstimate,
       budget,
       materials,
@@ -178,12 +177,10 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
       id: `m-${Date.now()}`, 
       name: newMaterialName, 
       vendor: newMaterialVendor || 'Unknown', 
-      quantity: newMaterialQuantity || undefined,
       status: 'pending' 
     }]);
     setNewMaterialName('');
     setNewMaterialVendor('');
-    setNewMaterialQuantity('');
   };
 
   const removeMaterial = (id: string) => {
@@ -232,8 +229,8 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
     if (!title.trim()) return;
     setIsGenerating(true);
     try {
-      const categoryNames = categoryIds.map(id => categories.find(c => c.id === id)?.name).filter(Boolean).join(', ') || 'General';
-      const suggestions = await generateTaskSuggestions(title, categoryNames);
+      const categoryName = categories.find(c => c.id === categoryId)?.name || 'General';
+      const suggestions = await generateTaskSuggestions(title, categoryName);
       if (suggestions.description && !description) {
         setDescription(suggestions.description);
       }
@@ -254,7 +251,7 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
 
   const renderViewMode = () => {
     const assignedUser = users.find(u => u.id === assignee);
-    const selectedCategories = categories.filter(c => categoryIds.includes(c.id));
+    const category = categories.find(c => c.id === categoryId);
     
     const totalSubtasks = subtasks.length;
     const completedSubtasks = subtasks.filter(st => st.completed).length;
@@ -273,11 +270,11 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
             <div className="flex flex-wrap items-center gap-2 mt-3 text-sm">
               <Badge variant="outline" className="uppercase">{status}</Badge>
               <Badge variant="outline" className={PRIORITY_COLORS[priority]}>{priority}</Badge>
-              {selectedCategories.map(category => (
-                <Badge key={category.id} variant="secondary" className={cn(category.color, "text-white")}>
+              {category && (
+                <Badge variant="secondary" className={cn(category.color, "text-white")}>
                   {category.name}
                 </Badge>
-              ))}
+              )}
             </div>
           </div>
 
@@ -286,7 +283,13 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
               <div className="text-xs text-muted-foreground mb-1">Assignee</div>
               <div className="flex items-center gap-2">
                 {assignedUser ? (
-                  <span className="text-sm font-medium">{assignedUser.name}</span>
+                  <>
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={assignedUser.avatar} />
+                      <AvatarFallback>{assignedUser.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">{assignedUser.name}</span>
+                  </>
                 ) : (
                   <span className="text-sm font-medium text-muted-foreground">Unassigned</span>
                 )}
@@ -304,14 +307,7 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
               <div className="text-sm font-medium flex items-center gap-1">
                 <Package className="h-3.5 w-3.5" />
                 {materials.length > 0 ? (
-                  <span>
-                    {materials.filter(m => m.status === 'delivered').length}/{materials.length} delivered
-                    {materials.filter(m => m.status === 'pending').length > 0 && (
-                      <span className="text-red-500 dark:text-red-400 text-xs ml-1">
-                        ({materials.filter(m => m.status === 'pending').length} pending)
-                      </span>
-                    )}
-                  </span>
+                  <span>{materials.filter(m => m.status === 'delivered').length}/{materials.length} delivered</span>
                 ) : (
                   <span className="text-muted-foreground">0 items</span>
                 )}
@@ -343,21 +339,12 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
 
           {materials.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                <Package className="h-4 w-4" /> Materials Tracking
-                {materials.filter(m => m.status === 'pending').length > 0 && (
-                  <span className="text-red-500 dark:text-red-400 text-xs font-medium ml-2 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    {materials.filter(m => m.status === 'pending').length} Pending
-                  </span>
-                )}
-              </h3>
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2"><Package className="h-4 w-4" /> Materials Tracking</h3>
               <div className="flex flex-col gap-2">
                 {materials.map(m => (
                   <div key={m.id} className="flex items-center gap-2 bg-muted/30 p-2 rounded-md border text-sm">
                     <div className="flex-1 font-medium">{m.name}</div>
-                    {m.quantity && <div className="text-muted-foreground text-xs bg-muted px-2 py-0.5 rounded">Qty: {m.quantity}</div>}
-                    <div className="text-muted-foreground w-1/4 truncate text-xs">{m.vendor}</div>
+                    <div className="text-muted-foreground w-1/3 truncate text-xs">{m.vendor}</div>
                     <Badge 
                       variant={m.status === 'delivered' ? 'default' : m.status === 'ordered' ? 'secondary' : 'outline'}
                       className="text-[10px] uppercase"
@@ -370,6 +357,19 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
             </div>
           )}
         </div>
+
+        <DialogFooter className="flex sm:justify-between items-center w-full">
+          <div className="flex items-center gap-2">
+            {onDelete && task && (
+              <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDelete(task.id)}>
+                <Trash2 className="h-4 w-4 mr-2" /> Delete
+              </Button>
+            )}
+          </div>
+          <Button onClick={() => setIsEditing(true)}>
+            <Edit2 className="h-4 w-4 mr-2" /> Edit Task
+          </Button>
+        </DialogFooter>
       </>
     );
   };
@@ -488,30 +488,22 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label className="truncate mr-2">Categories</Label>
+                <Label className="truncate mr-2">Category</Label>
                 <Button variant="ghost" size="xs" className="h-5 px-1 text-xs shrink-0" onClick={() => setIsManageCategoriesOpen(true)}>
                   Manage
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-1">
-                {categories.map(cat => (
-                  <Badge 
-                    key={cat.id} 
-                    variant={categoryIds.includes(cat.id) ? "default" : "outline"}
-                    className={cn("cursor-pointer", categoryIds.includes(cat.id) ? cat.color : "")}
-                    onClick={() => {
-                      if (categoryIds.includes(cat.id)) {
-                        setCategoryIds(categoryIds.filter(id => id !== cat.id));
-                      } else {
-                        setCategoryIds([...categoryIds, cat.id]);
-                      }
-                    }}
-                  >
-                    {cat.name}
-                  </Badge>
-                ))}
-                {categories.length === 0 && <span className="text-xs text-muted-foreground">No categories</span>}
-              </div>
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="grid gap-2">
@@ -593,21 +585,12 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
           </div>
 
           <div className="grid gap-2">
-            <Label className="flex items-center gap-2">
-              <Package className="h-4 w-4" /> Materials Tracking
-              {materials.filter(m => m.status === 'pending').length > 0 && (
-                <span className="text-red-500 dark:text-red-400 text-xs font-medium ml-2 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  {materials.filter(m => m.status === 'pending').length} Pending
-                </span>
-              )}
-            </Label>
+            <Label className="flex items-center gap-2"><Package className="h-4 w-4" /> Materials Tracking</Label>
             <div className="flex flex-col gap-2">
               {materials.map(m => (
                 <div key={m.id} className="flex items-center gap-2 group bg-muted/30 p-2 rounded-md border text-sm">
                   <div className="flex-1 font-medium">{m.name}</div>
-                  {m.quantity && <div className="text-muted-foreground text-xs bg-muted px-2 py-0.5 rounded">Qty: {m.quantity}</div>}
-                  <div className="text-muted-foreground w-1/4 truncate text-xs">{m.vendor}</div>
+                  <div className="text-muted-foreground w-1/3 truncate text-xs">{m.vendor}</div>
                   <Badge 
                     variant={m.status === 'delivered' ? 'default' : m.status === 'ordered' ? 'secondary' : 'outline'}
                     className="cursor-pointer text-[10px] uppercase"
@@ -630,19 +613,13 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
                   value={newMaterialName} 
                   onChange={(e) => setNewMaterialName(e.target.value)} 
                   placeholder="Material name..."
-                  className="h-8 text-sm flex-[2]"
-                />
-                <Input 
-                  value={newMaterialQuantity} 
-                  onChange={(e) => setNewMaterialQuantity(e.target.value)} 
-                  placeholder="Qty..."
                   className="h-8 text-sm flex-1"
                 />
                 <Input 
                   value={newMaterialVendor} 
                   onChange={(e) => setNewMaterialVendor(e.target.value)} 
                   placeholder="Vendor..."
-                  className="h-8 text-sm flex-[2]"
+                  className="h-8 text-sm w-1/3"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -737,6 +714,14 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
             </div>
           )}
         </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => {
+            if (!task) onOpenChange(false);
+            else setIsEditing(false);
+          }}>Cancel</Button>
+          <Button onClick={handleSave} disabled={!title.trim()}>Save Task</Button>
+        </DialogFooter>
       </>
     );
   };
@@ -744,35 +729,8 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-6">
-          {isEditing ? renderEditMode() : renderViewMode()}
-        </div>
-        
-        <div className="p-6 pt-0 border-t mt-auto bg-background">
-          {isEditing ? (
-            <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                if (!task) onOpenChange(false);
-                else setIsEditing(false);
-              }}>Cancel</Button>
-              <Button onClick={handleSave} disabled={!title.trim()}>Save Task</Button>
-            </DialogFooter>
-          ) : (
-            <DialogFooter className="flex sm:justify-between items-center w-full">
-              <div className="flex items-center gap-2">
-                {onDelete && task && (
-                  <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDelete(task.id)}>
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete
-                  </Button>
-                )}
-              </div>
-              <Button onClick={() => setIsEditing(true)}>
-                <Edit2 className="h-4 w-4 mr-2" /> Edit Task
-              </Button>
-            </DialogFooter>
-          )}
-        </div>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        {isEditing ? renderEditMode() : renderViewMode()}
       </DialogContent>
     </Dialog>
 
@@ -841,6 +799,10 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
                     <span className="text-sm">{user.name}</span>
                   </div>
                 )}
@@ -963,9 +925,7 @@ export function TaskDialog({ open, onOpenChange, task, users, categories, onSave
                       size="icon" 
                       className="h-7 w-7 text-destructive hover:text-destructive"
                       onClick={() => {
-                        if (categoryIds.includes(cat.id)) {
-                          setCategoryIds(categoryIds.filter(id => id !== cat.id));
-                        }
+                        if (categoryId === cat.id) setCategoryId('none');
                         removeCategory(cat.id);
                       }}
                     >

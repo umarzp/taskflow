@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
 import { Settings } from '../types';
-import { Sun, Moon, Monitor, Check } from 'lucide-react';
-import { cn } from '../lib/utils';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -17,31 +15,19 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onOpenChange, settings, updateSettings }: SettingsDialogProps) {
-  const [localSettings, setLocalSettings] = useState<Settings>(settings);
-
-  useEffect(() => {
-    if (open) {
-      setLocalSettings(settings);
-    }
-  }, [open, settings]);
-
-  const handleSave = () => {
-    updateSettings(localSettings);
-    onOpenChange(false);
-  };
 
   const handleThemeChange = (theme: Settings['theme']) => {
-    setLocalSettings(prev => ({ ...prev, theme }));
+    updateSettings({ theme });
   };
 
   const handleMeasurementUnitChange = (measurementUnit: Settings['measurementUnit']) => {
-    setLocalSettings(prev => ({ ...prev, measurementUnit }));
+    updateSettings({ measurementUnit });
   };
 
   const handleReminderTimingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value);
     if (!isNaN(val)) {
-      setLocalSettings(prev => ({ ...prev, reminderTiming: val }));
+      updateSettings({ reminderTiming: val });
     }
   };
 
@@ -51,7 +37,7 @@ export function SettingsDialog({ open, onOpenChange, settings, updateSettings }:
   };
 
   const handleTestWhatsApp = () => {
-    const cleanNumber = localSettings.whatsappNumber?.replace(/[\s-]/g, '') || '';
+    const cleanNumber = settings.whatsappNumber?.replace(/[\s-]/g, '') || '';
     if (!isValidWhatsAppNumber(cleanNumber)) return;
 
     const message = "Hello! This is a test message from TaskFlow.";
@@ -60,7 +46,7 @@ export function SettingsDialog({ open, onOpenChange, settings, updateSettings }:
     const url = `https://wa.me/${phoneForLink}?text=${encodedMessage}`;
 
     window.open(url, '_blank');
-    setLocalSettings(prev => ({ ...prev, lastWhatsAppSent: new Date().toISOString() }));
+    updateSettings({ lastWhatsAppSent: new Date().toISOString() });
   };
 
   return (
@@ -68,6 +54,7 @@ export function SettingsDialog({ open, onOpenChange, settings, updateSettings }:
       
       {/* ✅ FIXED DIALOG */}
       <DialogContent className="
+        z-[100] 
         fixed 
         top-[50%] left-[50%] 
         translate-x-[-50%] translate-y-[-50%]
@@ -84,105 +71,33 @@ export function SettingsDialog({ open, onOpenChange, settings, updateSettings }:
         <div className="grid gap-6 py-4">
 
           {/* Theme */}
-          <div className="grid gap-3">
+          <div className="grid gap-2">
             <Label>Theme</Label>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => handleThemeChange('light')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 transition-all hover:bg-muted/50",
-                  localSettings.theme === 'light' ? "border-primary bg-primary/5" : "border-border bg-transparent"
-                )}
-              >
-                <div className="relative">
-                  <Sun className="h-6 w-6" />
-                  {localSettings.theme === 'light' && (
-                    <div className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <Check className="h-3 w-3" />
-                    </div>
-                  )}
-                </div>
-                <span className="text-xs font-medium">Light</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleThemeChange('dark')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 transition-all hover:bg-muted/50",
-                  localSettings.theme === 'dark' ? "border-primary bg-primary/5" : "border-border bg-transparent"
-                )}
-              >
-                <div className="relative">
-                  <Moon className="h-6 w-6" />
-                  {localSettings.theme === 'dark' && (
-                    <div className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <Check className="h-3 w-3" />
-                    </div>
-                  )}
-                </div>
-                <span className="text-xs font-medium">Dark</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleThemeChange('system')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-4 transition-all hover:bg-muted/50",
-                  localSettings.theme === 'system' ? "border-primary bg-primary/5" : "border-border bg-transparent"
-                )}
-              >
-                <div className="relative">
-                  <Monitor className="h-6 w-6" />
-                  {localSettings.theme === 'system' && (
-                    <div className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <Check className="h-3 w-3" />
-                    </div>
-                  )}
-                </div>
-                <span className="text-xs font-medium">System</span>
-              </button>
-            </div>
+            <Select value={settings.theme} onValueChange={handleThemeChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select theme" />
+              </SelectTrigger>
+              <SelectContent className="z-[110]">
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="system">System Default</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Measurement */}
-          <div className="grid gap-3">
+          <div className="grid gap-2">
             <Label>Measurement Unit</Label>
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => handleMeasurementUnitChange('feet')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all hover:bg-muted/50",
-                  localSettings.measurementUnit === 'feet' ? "border-primary bg-primary/5" : "border-border bg-transparent"
-                )}
-              >
-                <span className="text-sm font-medium">Feet</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleMeasurementUnitChange('inches')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all hover:bg-muted/50",
-                  localSettings.measurementUnit === 'inches' ? "border-primary bg-primary/5" : "border-border bg-transparent"
-                )}
-              >
-                <span className="text-sm font-medium">Inches</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleMeasurementUnitChange('meters')}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all hover:bg-muted/50",
-                  localSettings.measurementUnit === 'meters' ? "border-primary bg-primary/5" : "border-border bg-transparent"
-                )}
-              >
-                <span className="text-sm font-medium">Meters</span>
-              </button>
-            </div>
+            <Select value={settings.measurementUnit} onValueChange={handleMeasurementUnitChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select unit" />
+              </SelectTrigger>
+              <SelectContent className="z-[110]">
+                <SelectItem value="feet">Feet</SelectItem>
+                <SelectItem value="inches">Inches</SelectItem>
+                <SelectItem value="meters">Meters</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Reminder */}
@@ -191,7 +106,7 @@ export function SettingsDialog({ open, onOpenChange, settings, updateSettings }:
             <Input
               type="number"
               min="0"
-              value={localSettings.reminderTiming}
+              value={settings.reminderTiming}
               onChange={handleReminderTimingChange}
             />
           </div>
@@ -200,9 +115,9 @@ export function SettingsDialog({ open, onOpenChange, settings, updateSettings }:
           <div className="flex items-center justify-between">
             <Label>Enable Notifications</Label>
             <Switch
-              checked={localSettings.notificationsEnabled}
+              checked={settings.notificationsEnabled}
               onCheckedChange={(checked) =>
-                setLocalSettings(prev => ({ ...prev, notificationsEnabled: checked }))
+                updateSettings({ notificationsEnabled: checked })
               }
             />
           </div>
@@ -211,29 +126,29 @@ export function SettingsDialog({ open, onOpenChange, settings, updateSettings }:
           <div className="flex items-center justify-between">
             <Label>WhatsApp Alerts</Label>
             <Switch
-              checked={localSettings.whatsappEnabled || false}
+              checked={settings.whatsappEnabled || false}
               onCheckedChange={(checked) =>
-                setLocalSettings(prev => ({ ...prev, whatsappEnabled: checked }))
+                updateSettings({ whatsappEnabled: checked })
               }
             />
           </div>
 
           {/* WhatsApp Number */}
-          {localSettings.whatsappEnabled && (
+          {settings.whatsappEnabled && (
             <div className="grid gap-2">
               <Label>WhatsApp Number</Label>
               <div className="flex gap-2">
                 <Input
                   placeholder="+91XXXXXXXXXX"
-                  value={localSettings.whatsappNumber || ''}
+                  value={settings.whatsappNumber || ''}
                   onChange={(e) =>
-                    setLocalSettings(prev => ({ ...prev, whatsappNumber: e.target.value }))
+                    updateSettings({ whatsappNumber: e.target.value })
                   }
                 />
                 <Button
                   variant="secondary"
                   onClick={handleTestWhatsApp}
-                  disabled={!isValidWhatsAppNumber(localSettings.whatsappNumber)}
+                  disabled={!isValidWhatsAppNumber(settings.whatsappNumber)}
                 >
                   Test
                 </Button>
@@ -247,15 +162,14 @@ export function SettingsDialog({ open, onOpenChange, settings, updateSettings }:
               <Label>Start</Label>
               <Input
                 type="time"
-                value={localSettings.workingHours.start}
+                value={settings.workingHours.start}
                 onChange={(e) =>
-                  setLocalSettings(prev => ({
-                    ...prev,
+                  updateSettings({
                     workingHours: {
-                      ...prev.workingHours,
+                      ...settings.workingHours,
                       start: e.target.value,
                     },
-                  }))
+                  })
                 }
               />
             </div>
@@ -264,26 +178,20 @@ export function SettingsDialog({ open, onOpenChange, settings, updateSettings }:
               <Label>End</Label>
               <Input
                 type="time"
-                value={localSettings.workingHours.end}
+                value={settings.workingHours.end}
                 onChange={(e) =>
-                  setLocalSettings(prev => ({
-                    ...prev,
+                  updateSettings({
                     workingHours: {
-                      ...prev.workingHours,
+                      ...settings.workingHours,
                       end: e.target.value,
                     },
-                  }))
+                  })
                 }
               />
             </div>
           </div>
 
         </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave}>Save Settings</Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

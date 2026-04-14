@@ -70,7 +70,7 @@ export function useTaskStore() {
     const settingsRef = doc(db, 'settings', userId);
     const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
       if (docSnap.exists()) {
-        setSettings({ ...DEFAULT_SETTINGS, ...docSnap.data() } as Settings);
+        setSettings(docSnap.data() as Settings);
       } else {
         setDoc(settingsRef, { ...DEFAULT_SETTINGS, userId });
       }
@@ -182,13 +182,8 @@ export function useTaskStore() {
   const updateSettings = async (updates: Partial<Settings>) => {
     if (!userId) return;
     try {
-      // Remove undefined values as Firestore doesn't support them
-      const sanitizedUpdates = Object.fromEntries(
-        Object.entries(updates).filter(([_, v]) => v !== undefined)
-      );
-      
       const settingsRef = doc(db, 'settings', userId);
-      await setDoc(settingsRef, sanitizedUpdates, { merge: true });
+      await updateDoc(settingsRef, updates);
     } catch (error) {
       console.error("Error updating settings:", error);
     }

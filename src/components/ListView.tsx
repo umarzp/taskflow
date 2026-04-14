@@ -80,7 +80,7 @@ export function ListView({ tasks, users, categories, onTaskClick, onDeleteTask }
             </TableRow>
           ) : (
             tasks.map((task) => {
-              const category = categories.find(c => c.id === task.categoryId);
+              const taskCategories = categories.filter(c => task.categoryIds?.includes(c.id));
               return (
               <TableRow 
                 key={task.id} 
@@ -91,12 +91,12 @@ export function ListView({ tasks, users, categories, onTaskClick, onDeleteTask }
                   <div className="flex flex-col gap-1">
                     <span className="line-clamp-1">{task.title}</span>
                     <div className="flex flex-wrap gap-1">
-                      {category && (
-                        <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0 flex items-center w-fit", category.color, "text-white")}>
+                      {taskCategories.map(category => (
+                        <Badge key={category.id} variant="secondary" className={cn("text-[10px] px-1.5 py-0 flex items-center w-fit", category.color, "text-white")}>
                           {getCategoryIcon(category.icon)}
                           {category.name}
                         </Badge>
-                      )}
+                      ))}
                     </div>
                   </div>
                 </TableCell>

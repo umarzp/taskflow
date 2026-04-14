@@ -100,7 +100,7 @@ export function KanbanBoard({ tasks, users, categories, onMoveTask, onTaskClick,
                 >
                   <div className="flex flex-col gap-3">
                     {getTasksByStatus(column.id).map((task, index) => {
-                      const category = categories.find(c => c.id === task.categoryId);
+                      const taskCategories = categories.filter(c => task.categoryIds?.includes(c.id));
                       const totalSubtasks = task.subtasks?.length || 0;
                       const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0;
                       const pendingSubtasks = totalSubtasks - completedSubtasks;
@@ -136,12 +136,12 @@ export function KanbanBoard({ tasks, users, categories, onMoveTask, onTaskClick,
                                     <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wider font-bold border-none px-2 py-0.5 rounded-md", PRIORITY_COLORS[task.priority])}>
                                       {task.priority}
                                     </Badge>
-                                    {category && (
-                                      <Badge variant="secondary" className={cn("text-[10px] px-2 py-0.5 flex items-center rounded-md font-medium", category.color, "text-white")}>
+                                    {taskCategories.map(category => (
+                                      <Badge key={category.id} variant="secondary" className={cn("text-[10px] px-2 py-0.5 flex items-center rounded-md font-medium", category.color, "text-white")}>
                                         {getCategoryIcon(category.icon)}
                                         {category.name}
                                       </Badge>
-                                    )}
+                                    ))}
                                   </div>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger render={
@@ -200,7 +200,14 @@ export function KanbanBoard({ tasks, users, categories, onMoveTask, onTaskClick,
                                     {task.materials && task.materials.length > 0 && (
                                       <div className="flex items-center gap-1">
                                         <Package className="h-3.5 w-3.5" />
-                                        <span>{task.materials.length}</span>
+                                        <span>
+                                          {task.materials.length}
+                                          {task.materials.filter(m => m.status === 'pending').length > 0 && (
+                                            <span className="text-red-500 dark:text-red-400 text-xs ml-1">
+                                              ({task.materials.filter(m => m.status === 'pending').length} pending)
+                                            </span>
+                                          )}
+                                        </span>
                                       </div>
                                     )}
                                     
@@ -220,12 +227,9 @@ export function KanbanBoard({ tasks, users, categories, onMoveTask, onTaskClick,
                                   </div>
                                   
                                   {task.assignee && (
-                                    <Avatar className="h-6 w-6 border border-background">
-                                      <AvatarImage src={users.find(u => u.id === task.assignee)?.avatar} />
-                                      <AvatarFallback className="text-[10px]">
-                                        {users.find(u => u.id === task.assignee)?.name.charAt(0)}
-                                      </AvatarFallback>
-                                    </Avatar>
+                                    <div className="text-xs font-medium bg-muted px-2 py-1 rounded-md">
+                                      {users.find(u => u.id === task.assignee)?.name.split(' ')[0]}
+                                    </div>
                                   )}
                                 </div>
                               </CardContent>

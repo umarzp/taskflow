@@ -77,6 +77,19 @@ export default function App() {
     return () => clearInterval(interval);
   }, [tasks, settings, notifiedTasks, userId]);
 
+  // Apply theme
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+
+    if (settings.theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.add(settings.theme);
+    }
+  }, [settings.theme]);
+
   // 🔐 Auth
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
@@ -110,7 +123,7 @@ export default function App() {
   const minutesSpent = Math.floor((totalTimeSpent % 3600) / 60);
 
   return (
-    <div className={`min-h-[100dvh] ${settings.theme === 'dark' ? 'dark' : ''} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex font-sans overflow-hidden`}>
+    <div className="min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex font-sans overflow-hidden">
       {/* Background Gradient/Glassmorphism */}
       <div className="fixed inset-0 z-[-1] bg-gradient-to-br from-blue-50/50 via-white to-purple-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800"></div>
 

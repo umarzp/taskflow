@@ -18,6 +18,7 @@ export interface Material {
   id: string;
   name: string;
   vendor: string;
+  quantity?: string | number;
   status: 'pending' | 'ordered' | 'delivered';
   cost?: number;
 }
@@ -28,7 +29,7 @@ export interface Task {
   description: string;
   status: Status;
   priority: Priority;
-  categoryId: string | null;
+  categoryIds: string[];
   dueDate: string | null;
   timeEstimate: number; // in minutes
   assignee: string | null;
